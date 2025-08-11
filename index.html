@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Бот для вивчення плитки - Тести</title>
-    <!-- Підключаємо Telegram WebApp -->
+    <!-- Telegram WebApp API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
@@ -41,7 +41,7 @@
         <h1>Тест з вивчення плитки</h1>
         <p v-if="!quizCompleted">Поточне питання: {{ currentQuestion + 1 }} / {{ questions.length }}</p>
         
-        <div v-if="!quizCompleted">
+        <div v-if="!quizCompleted && questions.length > 0">
             <div class="question" v-for="(question, index) in questions" :key="index" v-if="currentQuestion === index">
                 <p>{{ question.text }}</p>
                 <div v-for="(option, optIndex) in question.options" :key="optIndex">
@@ -55,7 +55,7 @@
             <button v-else @click="submitQuiz">Завершити тест</button>
         </div>
 
-        <div v-else class="result">
+        <div v-else-if="quizCompleted" class="result">
             <p>Ваш результат: {{ score }} / {{ questions.length }}</p>
             <button @click="restartQuiz">Почати заново</button>
         </div>
@@ -109,10 +109,23 @@
                         const data = Telegram.WebApp.initDataUnsafe || {};
                         console.log("Дані від Telegram:", data);
 
-                        if (data?.questions && Array.isArray(data.questions) && data.questions.length > 0) {
-                            this.questions = data.questions;
+                        let questionsFromBot = [];
+
+                        if (data?.questions) {
+                            try {
+                                // Якщо приходить як JSON-рядок — парсимо
+                                questionsFromBot = typeof data.questions === "string" 
+                                    ? JSON.parse(data.questions) 
+                                    : data.questions;
+                            } catch (e) {
+                                console.error("Помилка парсингу questions:", e);
+                            }
+                        }
+
+                        if (Array.isArray(questionsFromBot) && questionsFromBot.length > 0) {
+                            this.questions = questionsFromBot;
                         } else {
-                            // fallback — якщо бот не передав питання
+                            // fallback — якщо бот не передав питання або формат неправильний
                             this.questions = [
                                 {
                                     text: 'Що таке керамічна плитка?',
