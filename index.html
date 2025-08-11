@@ -1,128 +1,137 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Тест з вивчення плитки</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 0;
-            padding: 20px;
-            padding-bottom: env(safe-area-inset-bottom);
-            box-sizing: border-box;
-            min-height: 100vh;
-            overflow-y: auto;
-            background: var(--tg-theme-bg-color, #fff);
-            color: var(--tg-theme-text-color, #000);
-        }
-        h1 {
-            font-size: 1.5em;
-            margin-bottom: 10px;
-        }
-        .question { margin-bottom: 20px; }
-        .options { margin-top: 10px; }
-        label { display: block; margin-bottom: 8px; cursor: pointer; }
-        button { 
-            margin-top: 10px; 
-            padding: 10px; 
-            background-color: var(--tg-theme-button-color, #007bff); 
-            color: var(--tg-theme-button-text-color, white); 
-            border: none; 
-            cursor: pointer; 
-            border-radius: 6px;
-            font-size: 1em;
-        }
-        button:hover { opacity: 0.9; }
-        .result { font-weight: bold; margin-top: 20px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Тест з плитки - Telegram WebApp</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 20px;
+      background: var(--tg-theme-bg-color, #fff);
+      color: var(--tg-theme-text-color, #000);
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    #app {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 1.6em;
+      margin-bottom: 15px;
+    }
+    .question p {
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+    .options label {
+      display: block;
+      margin: 8px 0;
+      cursor: pointer;
+    }
+    button {
+      background-color: var(--tg-theme-button-color, #0088cc);
+      color: var(--tg-theme-button-text-color, #fff);
+      border: none;
+      padding: 10px 15px;
+      font-size: 1em;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    button:disabled {
+      background-color: #999;
+      cursor: not-allowed;
+    }
+    .result {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
-    <div id="app">
-        <h1>Тест з вивчення плитки</h1>
-        <p v-if="!quizCompleted">Поточне питання: {{ currentQuestion + 1 }} / {{ questions.length }}</p>
-        
-        <div v-if="!quizCompleted && questions.length > 0">
-            <div class="question" v-for="(question, index) in questions" :key="index" v-if="currentQuestion === index">
-                <p>{{ question.text }}</p>
-                <div class="options">
-                    <label v-for="(option, optIndex) in question.options" :key="optIndex">
-                        <input type="radio" v-model="userAnswers[index]" :value="optIndex">
-                        {{ option }}
-                    </label>
-                </div>
-            </div>
-            <button v-if="currentQuestion < questions.length - 1" @click="nextQuestion">Наступне питання</button>
-            <button v-else @click="submitQuiz">Завершити тест</button>
-        </div>
+  <div id="app">
+    <h1>Тест з вивчення плитки</h1>
 
-        <div v-else-if="quizCompleted" class="result">
-            <p>Ваш результат: {{ score }} / {{ questions.length }}</p>
-            <button @click="restartQuiz">Почати заново</button>
+    <div v-if="!quizCompleted">
+      <p>Питання {{ currentQuestion + 1 }} / {{ questions.length }}</p>
+      <div class="question">
+        <p>{{ questions[currentQuestion].text }}</p>
+        <div class="options">
+          <label v-for="(option, idx) in questions[currentQuestion].options" :key="idx">
+            <input type="radio" :value="idx" v-model="userAnswers[currentQuestion]" />
+            {{ option }}
+          </label>
         </div>
+      </div>
+      <button
+        :disabled="userAnswers[currentQuestion] === undefined"
+        @click="nextOrSubmit"
+      >
+        {{ currentQuestion < questions.length -1 ? 'Наступне питання' : 'Завершити тест' }}
+      </button>
     </div>
 
-    <script>
-        const { createApp } = Vue;
+    <div v-else class="result">
+      <p>Ваш результат: {{ score }} / {{ questions.length }}</p>
+      <button @click="restartQuiz">Почати заново</button>
+    </div>
+  </div>
 
-        createApp({
-            data() {
-                return {
-                    questions: [
-                        { text: 'Що таке керамічна плитка?', options: ['А. Матеріал для підлоги та стін', 'Б. Вид металу', 'В. Тип тканини', 'Г. Електронний пристрій'], correct: 0 },
-                        { text: 'Які основні типи плитки?', options: ['А. Керамічна, порцелянова, скляна', 'Б. Дерев\'яна, пластикова', 'В. Паперова, гумова', 'Г. Електронна, механічна'], correct: 0 },
-                        { text: 'Для чого використовується глазур на плитці?', options: ['А. Захист і декор', 'Б. Охолодження', 'В. Електроізоляція', 'Г. Магнітні властивості'], correct: 0 },
-                        { text: 'Яка перевага порцелянової плитки?', options: ['А. Міцність і водостійкість', 'Б. Нижча ціна', 'В. Легше різати', 'Г. Більше кольорів'], correct: 0 },
-                        { text: 'Що таке мозаїчна плитка?', options: ['А. Маленькі шматочки для візерунків', 'Б. Велика плитка', 'В. Металева плитка', 'Г. Плитка для стелі'], correct: 0 },
-                        { text: 'Який ПЕІ у неглазурованої плитки?', options: ['А. Немає', 'Б. 1', 'В. 2', 'Г. 5'], correct: 0 },
-                        { text: 'Що таке технічний грес?', options: ['А. Повнотілий керамограніт', 'Б. Глазурований грес', 'В. Мозаїка', 'Г. Пластикова плитка'], correct: 0 },
-                        { text: 'Чим ріжуть плитку?', options: ['А. Плиткорізом', 'Б. Лазером', 'В. Свердлом', 'Г. Ножем'], correct: 0 },
-                        { text: 'Що таке ректифікація плитки?', options: ['А. Обрізка країв', 'Б. Глазурування', 'В. Випал', 'Г. Ламінування'], correct: 0 },
-                        { text: 'Де використовують клінкер?', options: ['А. Зовнішнє мощення', 'Б. Декор стін', 'В. Меблі', 'Г. Електроніка'], correct: 0 }
-                    ],
-                    currentQuestion: 0,
-                    userAnswers: [],
-                    quizCompleted: false,
-                    score: 0
-                };
-            },
-            methods: {
-                nextQuestion() {
-                    if (this.userAnswers[this.currentQuestion] !== undefined) {
-                        this.currentQuestion++;
-                    } else {
-                        alert('Оберіть відповідь!');
-                    }
-                },
-                submitQuiz() {
-                    if (this.userAnswers[this.currentQuestion] !== undefined) {
-                        this.calculateScore();
-                        this.quizCompleted = true;
-                    } else {
-                        alert('Оберіть відповідь!');
-                    }
-                },
-                calculateScore() {
-                    this.score = this.questions.reduce((acc, question, index) => {
-                        return acc + (this.userAnswers[index] === question.correct ? 1 : 0);
-                    }, 0);
-                },
-                restartQuiz() {
-                    this.currentQuestion = 0;
-                    this.userAnswers = [];
-                    this.quizCompleted = false;
-                    this.score = 0;
-                }
-            },
-            mounted() {
-                if (window.Telegram && window.Telegram.WebApp) {
-                    Telegram.WebApp.ready();
-                    Telegram.WebApp.expand();
-                }
-            }
-        }).mount('#app');
-    </script>
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          questions: [
+            { text: 'Що таке керамічна плитка?', options: ['А. Матеріал для підлоги та стін', 'Б. Вид металу', 'В. Тип тканини', 'Г. Електронний пристрій'], correct: 0 },
+            { text: 'Які основні типи плитки?', options: ['А. Керамічна, порцелянова, скляна', 'Б. Дерев\'яна, пластикова', 'В. Паперова, гумова', 'Г. Електронна, механічна'], correct: 0 },
+            { text: 'Для чого використовується глазур?', options: ['А. Захист і декор', 'Б. Охолодження', 'В. Електроізоляція', 'Г. Магнітні властивості'], correct: 0 },
+            { text: 'Перевага порцелянової плитки?', options: ['А. Міцність і водостійкість', 'Б. Нижча ціна', 'В. Легше різати', 'Г. Більше кольорів'], correct: 0 },
+            { text: 'Що таке мозаїчна плитка?', options: ['А. Маленькі шматочки для візерунків', 'Б. Велика плитка', 'В. Металева плитка', 'Г. Плитка для стелі'], correct: 0 },
+            { text: 'Який ПЕІ у неглазурованої плитки?', options: ['А. Немає', 'Б. 1', 'В. 2', 'Г. 5'], correct: 0 },
+            { text: 'Що таке технічний грес?', options: ['А. Повнотілий керамограніт', 'Б. Глазурований грес', 'В. Мозаїка', 'Г. Пластикова плитка'], correct: 0 },
+            { text: 'Чим ріжуть плитку?', options: ['А. Плиткорізом', 'Б. Лазером', 'В. Свердлом', 'Г. Ножем'], correct: 0 },
+            { text: 'Що таке ректифікація плитки?', options: ['А. Обрізка країв', 'Б. Глазурування', 'В. Випал', 'Г. Ламінування'], correct: 0 },
+            { text: 'Де використовують клінкер?', options: ['А. Зовнішнє мощення', 'Б. Декор стін', 'В. Меблі', 'Г. Електроніка'], correct: 0 }
+          ],
+          currentQuestion: 0,
+          userAnswers: [],
+          quizCompleted: false,
+          score: 0
+        }
+      },
+      methods: {
+        nextOrSubmit() {
+          if (this.currentQuestion < this.questions.length - 1) {
+            this.currentQuestion++;
+          } else {
+            this.calculateScore();
+            this.quizCompleted = true;
+          }
+        },
+        calculateScore() {
+          this.score = this.questions.reduce((acc, q, idx) => acc + (this.userAnswers[idx] === q.correct ? 1 : 0), 0);
+        },
+        restartQuiz() {
+          this.currentQuestion = 0;
+          this.userAnswers = [];
+          this.quizCompleted = false;
+          this.score = 0;
+        }
+      },
+      mounted() {
+        if(window.Telegram && window.Telegram.WebApp){
+          Telegram.WebApp.ready();
+          Telegram.WebApp.expand();
+        }
+      }
+    }).mount('#app')
+  </script>
 </body>
 </html>
