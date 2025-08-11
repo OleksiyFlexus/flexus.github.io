@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бот для вивчення плитки - Тести</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script> <!-- Для інтеграції з Telegram Mini App -->
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .question { margin-bottom: 20px; }
+        button { margin-top: 10px; padding: 10px; background-color: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .result { font-weight: bold; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>Тест з вивчення плитки</h1>
+        <div v-if="!quizCompleted">
+            <div class="question" v-for="(question, index) in questions" :key="index" v-if="currentQuestion === index">
+                <p>{{ question.text }}</p>
+                <div v-for="(option, optIndex) in question.options" :key="optIndex">
+                    <label>
+                        <input type="radio" v-model="userAnswers[index]" :value="optIndex">
+                        {{ option }}
+                    </label>
+                </div>
+            </div>
+            <button v-if="currentQuestion < questions.length - 1" @click="nextQuestion">Наступне питання</button>
+            <button v-else @click="submitQuiz">Завершити тест</button>
+        </div>
+        <div v-else class="result">
+            <p>Ваш результат: {{ score }} / {{ questions.length }}</p>
+            <button @click="restartQuiz">Почати заново</button>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    questions: [
+                        {
+                            text: 'Що таке керамічна плитка?',
+                            options: ['Матеріал для покриття підлоги та стін', 'Вид металу', 'Тип тканини', 'Електронний пристрій'],
+                            correct: 0
+                        },
+                        {
+                            text: 'Які основні типи плитки?',
+                            options: ['Керамічна, порцелянова, скляна', 'Дерев\'яна, металева, пластикова', 'Паперова, тканинна, гумова', 'Електронна, механічна, оптична'],
+                            correct: 0
+                        },
+                        {
+                            text: 'Для чого використовується глазур на плитці?',
+                            options: ['Для захисту та декору', 'Для охолодження', 'Для електроізоляції', 'Для магнітних властивостей'],
+                            correct: 0
+                        },
+                        {
+                            text: 'Яка перевага порцелянової плитки над керамічною?',
+                            options: ['Більша міцність та водостійкість', 'Нижча ціна', 'Легше різати', 'Більше кольорів'],
+                            correct: 0
+                        },
+                        {
+                            text: 'Що таке мозаїчна плитка?',
+                            options: ['Маленькі шматочки плитки для створення візерунків', 'Велика плитка для підлоги', 'Плитка з металу', 'Плитка для стелі'],
+                            correct: 0
+                        }
+                    ],
+                    currentQuestion: 0,
+                    userAnswers: [],
+                    quizCompleted: false,
+                    score: 0
+                };
+            },
+            methods: {
+                nextQuestion() {
+                    if (this.userAnswers[this.currentQuestion] !== undefined) {
+                        this.currentQuestion++;
+                    } else {
+                        alert('Оберіть відповідь!');
+                    }
+                },
+                submitQuiz() {
+                    if (this.userAnswers[this.currentQuestion] !== undefined) {
+                        this.calculateScore();
+                        this.quizCompleted = true;
+                    } else {
+                        alert('Оберіть відповідь!');
+                    }
+                },
+                calculateScore() {
+                    this.score = this.questions.reduce((acc, question, index) => {
+                        return acc + (this.userAnswers[index] === question.correct ? 1 : 0);
+                    }, 0);
+                },
+                restartQuiz() {
+                    this.currentQuestion = 0;
+                    this.userAnswers = [];
+                    this.quizCompleted = false;
+                    this.score = 0;
+                }
+            },
+            mounted() {
+                // Інтеграція з Telegram Web App
+                if (window.Telegram && window.Telegram.WebApp) {
+                    Telegram.WebApp.ready();
+                    Telegram.WebApp.expand();
+                    // Можна додати більше функціоналу, наприклад, надсилання результату боту
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
