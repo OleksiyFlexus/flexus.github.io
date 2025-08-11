@@ -2,32 +2,45 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"> <!-- Додано viewport-fit=cover для safe areas -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Бот для вивчення плитки - Тести</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script> <!-- Першим! -->
+    <!-- Підключаємо Telegram WebApp -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
         body { 
             font-family: Arial, sans-serif; 
-            margin: 0; /* Знімаємо маржин для повного екрану */
+            margin: 0;
             padding: 20px;
-            padding-bottom: env(safe-area-inset-bottom); /* Виправлення для bottom bar на iOS */
+            padding-bottom: env(safe-area-inset-bottom);
             box-sizing: border-box;
-            min-height: 100vh; /* Повна висота */
-            overflow-y: auto; /* Скрол, якщо потрібно */
+            min-height: 100vh;
+            overflow-y: auto;
+            background: var(--tg-theme-bg-color, #fff);
+            color: var(--tg-theme-text-color, #000);
         }
         #app {
-            min-height: 100vh; /* Забезпечуємо висоту для контенту */
+            min-height: 100vh;
         }
         .question { margin-bottom: 20px; }
-        button { margin-top: 10px; padding: 10px; background-color: #007bff; color: white; border: none; cursor: pointer; }
-        button:hover { background-color: #0056b3; }
+        button { 
+            margin-top: 10px; 
+            padding: 10px; 
+            background-color: var(--tg-theme-button-color, #007bff); 
+            color: var(--tg-theme-button-text-color, white); 
+            border: none; 
+            cursor: pointer; 
+            border-radius: 6px;
+        }
+        button:hover { opacity: 0.9; }
         .result { font-weight: bold; margin-top: 20px; }
     </style>
 </head>
 <body>
     <div id="app">
         <h1>Тест з вивчення плитки</h1>
+        <p v-if="!quizCompleted">Поточне питання: {{ currentQuestion + 1 }} / {{ questions.length }}</p>
+        
         <div v-if="!quizCompleted">
             <div class="question" v-for="(question, index) in questions" :key="index" v-if="currentQuestion === index">
                 <p>{{ question.text }}</p>
@@ -41,6 +54,7 @@
             <button v-if="currentQuestion < questions.length - 1" @click="nextQuestion">Наступне питання</button>
             <button v-else @click="submitQuiz">Завершити тест</button>
         </div>
+
         <div v-else class="result">
             <p>Ваш результат: {{ score }} / {{ questions.length }}</p>
             <button @click="restartQuiz">Почати заново</button>
@@ -48,25 +62,12 @@
     </div>
 
     <script>
-        // Викликаємо ready() рано, перед Vue
-        if (window.Telegram && window.Telegram.WebApp) {
-            Telegram.WebApp.ready();
-            Telegram.WebApp.expand();
-        }
-
         const { createApp } = Vue;
 
         createApp({
             data() {
                 return {
-                    questions: [
-                        {
-                            text: 'Що таке керамічна плитка?',
-                            options: ['Матеріал для покриття підлоги та стін', 'Вид металу', 'Тип тканини', 'Електронний пристрій'],
-                            correct: 0
-                        },
-                        // ... (інші питання без змін)
-                    ],
+                    questions: [],
                     currentQuestion: 0,
                     userAnswers: [],
                     quizCompleted: false,
@@ -99,11 +100,39 @@
                     this.userAnswers = [];
                     this.quizCompleted = false;
                     this.score = 0;
+                },
+                loadQuestionsFromTelegram() {
+                    if (window.Telegram && window.Telegram.WebApp) {
+                        Telegram.WebApp.ready();
+                        Telegram.WebApp.expand();
+                        
+                        const data = Telegram.WebApp.initDataUnsafe || {};
+                        console.log("Дані від Telegram:", data);
+
+                        if (data?.questions && Array.isArray(data.questions) && data.questions.length > 0) {
+                            this.questions = data.questions;
+                        } else {
+                            // fallback — якщо бот не передав питання
+                            this.questions = [
+                                {
+                                    text: 'Що таке керамічна плитка?',
+                                    options: ['Матеріал для покриття підлоги та стін', 'Вид металу', 'Тип тканини', 'Електронний пристрій'],
+                                    correct: 0
+                                },
+                                {
+                                    text: 'Які основні типи плитки?',
+                                    options: ['Керамічна, порцелянова, скляна', 'Дерев\'яна, металева, пластикова', 'Паперова, тканинна, гумова', 'Електронна, механічна, оптична'],
+                                    correct: 0
+                                }
+                            ];
+                        }
+                    } else {
+                        alert("Telegram WebApp API недоступний");
+                    }
                 }
             },
             mounted() {
-                console.log('Vue mounted, questions length:', this.questions.length); // Дебаг: перевірте в консолі браузера
-                console.log('Current question:', this.currentQuestion);
+                this.loadQuestionsFromTelegram();
             }
         }).mount('#app');
     </script>
