@@ -16,7 +16,7 @@
       box-sizing: border-box;
     }
     #app {
-      max-width: 600px;
+      max-width: 700px;
       margin: 0 auto;
     }
     h1 {
@@ -31,6 +31,29 @@
       display: block;
       margin: 8px 0;
       cursor: pointer;
+      user-select: none;
+    }
+    input[type="radio"] {
+      margin-right: 8px;
+      cursor: pointer;
+    }
+    .feedback {
+      margin-top: 10px;
+      font-weight: bold;
+      font-size: 1em;
+      padding: 8px 12px;
+      border-radius: 6px;
+      width: fit-content;
+    }
+    .correct {
+      color: #155724;
+      background-color: #d4edda;
+      border: 1px solid #c3e6cb;
+    }
+    .incorrect {
+      color: #721c24;
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
     }
     button {
       background-color: var(--tg-theme-button-color, #0088cc);
@@ -40,7 +63,7 @@
       font-size: 1em;
       border-radius: 6px;
       cursor: pointer;
-      margin-top: 15px;
+      margin-top: 20px;
     }
     button:disabled {
       background-color: #999;
@@ -62,16 +85,25 @@
       <div class="question">
         <p>{{ questions[currentQuestion].text }}</p>
         <div class="options">
-          <label v-for="(option, idx) in questions[currentQuestion].options" :key="idx">
-            <input type="radio" :value="idx" v-model="userAnswers[currentQuestion]" />
+          <label v-for="(option, idx) in questions[currentQuestion].options" :key="idx" :class="{disabled: answered}">
+            <input 
+              type="radio" 
+              :value="idx" 
+              v-model="userAnswers[currentQuestion]" 
+              :disabled="answered"
+              @change="checkAnswer(idx)" 
+            />
             {{ option }}
           </label>
         </div>
+        <div v-if="answered" 
+             :class="{'feedback': true, 'correct': isAnswerCorrect, 'incorrect': !isAnswerCorrect}">
+          {{ isAnswerCorrect ? 'Правильно!' : 'Неправильно!' }}
+        </div>
       </div>
-      <button
-        :disabled="userAnswers[currentQuestion] === undefined"
-        @click="nextOrSubmit"
-      >
+      <button 
+        :disabled="!answered" 
+        @click="nextOrSubmit">
         {{ currentQuestion < questions.length -1 ? 'Наступне питання' : 'Завершити тест' }}
       </button>
     </div>
@@ -89,27 +121,77 @@
       data() {
         return {
           questions: [
-            { text: 'Що таке керамічна плитка?', options: ['А. Матеріал для підлоги та стін', 'Б. Вид металу', 'В. Тип тканини', 'Г. Електронний пристрій'], correct: 0 },
-            { text: 'Які основні типи плитки?', options: ['А. Керамічна, порцелянова, скляна', 'Б. Дерев\'яна, пластикова', 'В. Паперова, гумова', 'Г. Електронна, механічна'], correct: 0 },
-            { text: 'Для чого використовується глазур?', options: ['А. Захист і декор', 'Б. Охолодження', 'В. Електроізоляція', 'Г. Магнітні властивості'], correct: 0 },
-            { text: 'Перевага порцелянової плитки?', options: ['А. Міцність і водостійкість', 'Б. Нижча ціна', 'В. Легше різати', 'Г. Більше кольорів'], correct: 0 },
-            { text: 'Що таке мозаїчна плитка?', options: ['А. Маленькі шматочки для візерунків', 'Б. Велика плитка', 'В. Металева плитка', 'Г. Плитка для стелі'], correct: 0 },
-            { text: 'Який ПЕІ у неглазурованої плитки?', options: ['А. Немає', 'Б. 1', 'В. 2', 'Г. 5'], correct: 0 },
-            { text: 'Що таке технічний грес?', options: ['А. Повнотілий керамограніт', 'Б. Глазурований грес', 'В. Мозаїка', 'Г. Пластикова плитка'], correct: 0 },
-            { text: 'Чим ріжуть плитку?', options: ['А. Плиткорізом', 'Б. Лазером', 'В. Свердлом', 'Г. Ножем'], correct: 0 },
-            { text: 'Що таке ректифікація плитки?', options: ['А. Обрізка країв', 'Б. Глазурування', 'В. Випал', 'Г. Ламінування'], correct: 0 },
-            { text: 'Де використовують клінкер?', options: ['А. Зовнішнє мощення', 'Б. Декор стін', 'В. Меблі', 'Г. Електроніка'], correct: 0 }
+            {
+              text: 'Який процес у виробництві плитки забезпечує високу міцність і низьке водопоглинання?',
+              options: ['А. Випал при високій температурі', 'Б. Глазурування', 'В. Ректифікація', 'Г. Ламінування'],
+              correct: 0
+            },
+            {
+              text: 'Що найкраще описує порцелянову плитку порівняно з керамічною?',
+              options: ['А. Менша пористість і більша міцність', 'Б. Легша вага', 'В. Вища гнучкість', 'Г. Яскравіший колір'],
+              correct: 0
+            },
+            {
+              text: 'Для чого застосовується глазур на плитці?',
+              options: ['А. Захист від механічних пошкоджень і декоративний ефект', 'Б. Зменшення ваги плитки', 'В. Покращення теплоізоляції', 'Г. Збільшення електропровідності'],
+              correct: 0
+            },
+            {
+              text: 'Що означає термін "ректифікація" плитки?',
+              options: ['А. Механічне обрізання країв для ідеальної геометрії', 'Б. Нанесення глазурі', 'В. Випал при високій температурі', 'Г. Виробництво мозаїки'],
+              correct: 0
+            },
+            {
+              text: 'Яка властивість керамограніту робить його ідеальним для зовнішніх облицювань?',
+              options: ['А. Морозостійкість і низьке водопоглинання', 'Б. Легка вага', 'В. Висока теплопровідність', 'Г. Пориста структура'],
+              correct: 0
+            },
+            {
+              text: 'Що таке технічний грес у плитці?',
+              options: ['А. Повнотіла плитка з високою міцністю', 'Б. Глазурована плитка з декоративним малюнком', 'В. Мозаїчна плитка', 'Г. Плитка для стелі'],
+              correct: 0
+            },
+            {
+              text: 'Як називається процес нанесення кольорового шару на плитку перед випалюванням?',
+              options: ['А. Глазурування', 'Б. Декорування', 'В. Керамізація', 'Г. Полірування'],
+              correct: 1
+            },
+            {
+              text: 'Який інструмент найчастіше використовують для різання керамічної плитки?',
+              options: ['А. Плиткоріз', 'Б. Лазерний різак', 'В. Болгарка', 'Г. Рубанок'],
+              correct: 0
+            },
+            {
+              text: 'Для чого застосовується глазур на плитці?',
+              options: ['А. Захист і прикраса', 'Б. Охолодження', 'В. Електроізоляція', 'Г. Магнітні властивості'],
+              correct: 0
+            },
+            {
+              text: 'Що таке мозаїчна плитка?',
+              options: ['А. Маленькі шматочки плитки для створення візерунків', 'Б. Велика плитка для підлоги', 'В. Плитка з металу', 'Г. Плитка для стелі'],
+              correct: 0
+            }
           ],
           currentQuestion: 0,
           userAnswers: [],
           quizCompleted: false,
-          score: 0
+          score: 0,
+          answered: false,
+          isAnswerCorrect: false,
         }
       },
       methods: {
+        checkAnswer(selectedIdx) {
+          this.answered = true;
+          this.isAnswerCorrect = selectedIdx === this.questions[this.currentQuestion].correct;
+          this.userAnswers[this.currentQuestion] = selectedIdx;
+        },
         nextOrSubmit() {
+          if (!this.answered) return;
           if (this.currentQuestion < this.questions.length - 1) {
             this.currentQuestion++;
+            this.answered = false;
+            this.isAnswerCorrect = false;
           } else {
             this.calculateScore();
             this.quizCompleted = true;
@@ -123,6 +205,8 @@
           this.userAnswers = [];
           this.quizCompleted = false;
           this.score = 0;
+          this.answered = false;
+          this.isAnswerCorrect = false;
         }
       },
       mounted() {
@@ -131,7 +215,7 @@
           Telegram.WebApp.expand();
         }
       }
-    }).mount('#app')
+    }).mount('#app');
   </script>
 </body>
 </html>
